@@ -1,11 +1,5 @@
-# For the assignment, implement basic backtracking search along with the MRV, degree,
-# and least constraining value heuristic. In your documentation, make sure that you describe
-# your program at a high level and discuss any interesting aspects of your program. Test
-# data is in a separate file, asking for a 4-colouring of 10 countries. Run your program on
-# this data, as well as trying for a 3-colouring (which will fail). As well, optionally, test your
-# program with and without using the heuristics, and report on the improvement (or lack of
-# improvement) obtained.
-
+# Author: Alex Li
+# Student #: 301239152
 
 # Function Backtracking-Search(csp) returns solution/failure
 # return Recursive-Backtracking({ }, csp)
@@ -23,65 +17,54 @@
 
 from queue import PriorityQueue
 
+# Check the assignment is complete or not 
 def isComplete(assignment,n):
     if len(assignment) == n:
         return True
     return False
 
-def pickVeterx(unassigned):
-    # get the indexes for unassigned nodes
-    indexes = [(x - 1) for x in unassigned]
-    uncolor = [color[x] for x in indexes]
-    colorlen = [len(x) for x in uncolor]
-    # check the duplication of min 
-    m = min(colorlen)
-    dup = [i for i, j in enumerate(colorlen) if j == m]
-    return indexes[dup[0]] +1
+def pickVertex(unassign_list):
+    color_lens = []
+    for index in unassign_list:
+        color_lens.append(len(color[index-1]))
+    min_size = min(color_lens)
+    min_poses = [pos for pos,val in enumerate(color_lens) if val == min_size]
+    return unassign_list[min_poses[0]]
 
-
-    # color_lens = []
-    # for index in unassigned:
-    #     color_lens.append(len(color[index-1]))
-    # opt_size = min(color_lens)
-    # min_poses = [pos for pos,val in enumerate(color_lens) if val == opt_size]
-    # return  unassigned[min_poses[0]]+1
-
-def checkConsistant(curr_vertex, curr_color):
-    for neighbour in G[curr_vertex - 1]:
-        if neighbour != G[curr_vertex - 1][0]:
-            # If any adjacet nodes has same colour, return false instantly
-            for node in assignment:
-                if neighbour == node[0] and curr_color == node[1]:
-                    return False
-    return True
-                
   
 def heuristic(curr_vertex, temp_color):
     count = 0
-    for node in unassigned:
-        if node != curr_vertex and node in G[curr_vertex - 1] :
+    for node in unassign_list:
+        if node != curr_vertex and node in G[curr_vertex - 1]:
             count += len(color[node - 1])
             if temp_color in color[node-1]:
                 count -= 1
     return count 
  
     
-def pickColor(curr_vertex):
+def createColorPq(curr_vertex):
     pq = PriorityQueue()
-
     for temp_color in range(1,k + 1):
         pq.put((heuristic(curr_vertex, temp_color),temp_color))
-    
     return pq
+
+def isConsistant(curr_vertex, curr_color):
+    for neighbour in G[curr_vertex - 1]:
+        if neighbour != G[curr_vertex - 1][0]:
+            for node in assignment:
+                # if neighbour contains same color return false
+                if neighbour == node[0] and curr_color == node[1]:
+                    return False
+    return True
 
 def removeColor(curr_vertex,curr_color):
     for neighbour in G[curr_vertex - 1]:
-        if neighbour in unassigned:
+        if neighbour in unassign_list:
             color[neighbour - 1].remove(curr_color)
 
 def addColor(curr_vertex, curr_color):
     for neighbour in G[curr_vertex - 1]:
-        if neighbour in unassigned:
+        if neighbour in unassign_list:
             color[neighbour - 1].append(curr_color) 
       
 
@@ -90,47 +73,46 @@ def solve(n, k, G):
     if isComplete(assignment,n):
         return assignment
 
-    curr_vertex = pickVeterx(unassigned)
-    colorPriority = pickColor(curr_vertex)
+    curr_vertex = pickVertex(unassign_list)
+    colorPq = createColorPq(curr_vertex)
     # print(curr_vertex)
     for _ in range(k):
-        i = colorPriority.get()[1]
+        curr_color = colorPq.get()[1]
         
-        if checkConsistant(curr_vertex,i):
-            assignment.append((curr_vertex,i))
-            assigned.append(curr_vertex)
-            unassigned.remove(curr_vertex)
-            removeColor(curr_vertex,i)
+        if isConsistant(curr_vertex,curr_color):
+            assignment.append((curr_vertex,curr_color))
+            assigned_list.append(curr_vertex)
+            unassign_list.remove(curr_vertex)
+            removeColor(curr_vertex,curr_color)
           
             ans = solve(n,k,G)
             if ans != []:
                 return ans
 
-            assignment.remove((curr_vertex,i))
-            assigned.remove(curr_vertex)
-            addColor(curr_vertex,i)
-            unassigned.append(curr_vertex)
+            assignment.remove((curr_vertex,curr_color))
+            assigned_list.remove(curr_vertex)
+            addColor(curr_vertex,curr_color)
+            unassign_list.append(curr_vertex)
 
     return []
 
-    
-# Input 
-G = [[1,2,3], [2,1,3], [3,1,2], [4,5], [5,4]] # a list of lists
-n = 5  # number of vertices
-k = 3  # number of colours
+
+# G = [[1,2,3], [2,1,3], [3,1,2], [4,5], [5,4]] # a list of lists
+# n = 5  # number of vertices
+# k = 3  # number of colours
 
 G = [[1,2 ,3, 4, 6, 7, 10],[2, 1, 3, 4, 5, 6],[3, 1, 2],[4, 1, 2],[5, 2, 6],[6, 1, 2, 5, 7, 8],[7, 1, 6, 8, 9 ,10],[8, 6, 7, 9],[9, 7, 8, 10],[10, 1, 7, 9]]
 n = len(G)
-k = 4
+k = 5
 
-# inital result assigned nodes, unasigned nodes and assignments for check compelete or not
-ans = []
+# inital result assigned_list nodes, unasigned nodes and assignments for check compelete or not
 assignment = []
-unassigned = list(range(1,n+1))
-assigned = []
+unassign_list = list(range(1,n+1))
+assigned_list = []
 color = []
 for i in range(n):
     color.append(list(range(1,k + 1)))
+ans = []
 
 # solve(n,k,G)
 print(solve(n,k,G))
